@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orbit Link Hub</title>
+    <!-- Favicon using SVG -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' ry='20' fill='%231f2937'/%3E%3Ctext x='50' y='65' font-size='60' fill='%23FFFFFF' font-family='sans-serif' text-anchor='middle'%3EO%3C/text%3E%3C/svg%3E">
+    <!-- Load Tailwind CSS from CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Load CryptoJS for AES encryption -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <!-- Load jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Load html2canvas for PDF image rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #111827;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Main Container for all content -->
+    <div class="max-w-md w-full bg-gray-800 rounded-3xl shadow-2xl p-8 space-y-8 backdrop-filter backdrop-blur-sm bg-opacity-80 border border-gray-700">
+
+        <!-- Profile Picture and Header Section -->
+        <header class="text-center space-y-4">
+            <img src="https://placehold.co/128x128/333333/FFFFFF?text=O" alt="Profile Picture" class="w-32 h-32 rounded-full mx-auto shadow-lg transform transition-transform duration-300 hover:scale-110 border-4 border-teal-500">
+            
+            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-blue-500 to-purple-600">
+                Orbit
+            </h1>
+            <p class="mt-2 text-gray-400">
+                A secure space for your links and passwords.
+            </p>
+            <div class="flex items-center justify-center mt-4 space-x-4">
+                <div class="text-sm text-gray-500">
+                    User ID: <span id="user-id">Calvin</span>
+                </div>
+                <button id="export-btn" class="p-2 text-gray-400 hover:text-white transition-colors hidden">
+                    <i class="fas fa-file-export"></i> Export
+                </button>
+                <button id="logout-btn" class="p-2 text-gray-400 hover:text-white transition-colors hidden">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </header>
+
+    
+        
+        <!-- Search Input -->
+        <div class="relative">
+            <input type="text" id="search-input" placeholder="Search links and passwords..." class="w-full bg-gray-600 border border-gray-500 text-white rounded-xl px-4 py-3 pl-10 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+        </div>
+
+        <!-- Links Section -->
+        <section>
+            <h2 class="text-2xl font-bold text-white mb-4">Links</h2>
+            <main class="space-y-4" id="links-container">
+                <p id="loading-links-message" class="text-center text-gray-400">Loading links...</p>
+            </main>
+        </section>
+
+        <!-- Passwords Section -->
+        <section>
+            <h2 class="text-2xl font-bold text-white mb-4">Passwords</h2>
+            <main class="space-y-4" id="passwords-container">
+                <p id="loading-passwords-message" class="text-center text-gray-400">Loading passwords...</p>
+            </main>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center text-gray-500 text-sm mt-8 pt-4 border-t border-gray-700">
+            © 2025 Developed By Tac Cyberservices | Orbit. All rights reserved.
+        </footer>
+    </div>
+
+    <!-- Floating Add Button -->
+    <button id="add-item-btn" class="fixed bottom-8 right-8 p-4 bg-gradient-to-r from-teal-700 to-blue-800 text-white rounded-full shadow-lg hover:from-teal-800 hover:to-blue-900 transition-all duration-200 transform hover:scale-110">
+        <i class="fas fa-plus fa-lg"></i>
+    </button>
+
+    <!-- Passphrase Setup/Login Modal -->
+    <div id="passphrase-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden">
+        <div class="relative max-w-sm w-full bg-gray-800 rounded-3xl shadow-2xl p-8 space-y-6">
+            <h2 id="passphrase-modal-title" class="text-2xl font-bold text-white mb-4">Passphrase</h2>
+            <form id="passphrase-form" class="space-y-4">
+                <input type="password" id="passphrase-input" placeholder="Enter your passphrase" required class="w-full bg-gray-600 border border-gray-500 text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <button type="submit" class="w-full bg-gradient-to-r from-teal-700 to-blue-800 hover:from-teal-800 hover:to-blue-900 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105">
+                    Submit
+                </button>
+            </form>
+            <p id="passphrase-error" class="text-red-400 text-center hidden"></p>
+        </div>
+    </div>
+
+    <!-- Add/Edit Link Modal -->
+    <div id="add-link-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden">
+        <div class="relative max-w-sm w-full bg-gray-800 rounded-3xl shadow-2xl p-8 space-y-6">
+            <h2 id="link-modal-title" class="text-2xl font-bold text-white mb-4">Add a New Link</h2>
+            <form id="add-link-form" class="space-y-4">
+                <input type="hidden" id="edit-link-id">
+                <input type="text" id="link-name" placeholder="Website Name" required class="w-full bg-gray-600 border border-gray-500 text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <input type="url" id="link-url" placeholder="https://website.com" required class="w-full bg-gray-600 border border-gray-500 text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <input type="text" id="link-icon" placeholder="Font Awesome Icon Class (e.g., fas fa-globe)" class="w-full bg-gray-600 border border-gray-500 text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <button type="submit" id="link-modal-submit-btn" class="w-full bg-gradient-to-r from-teal-700 to-blue-800 hover:from-teal-800 hover:to-blue-900 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105">
+                    Add Link
+                </button>
+            </form>
+            <button id="close-link-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fas fa-times fa-lg"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Add/Edit Password Modal -->
+    <div id="add-password-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden">
+        <div class="relative max-w-sm w-full bg-gray-800 rounded-3xl shadow-2xl p-8 space-y-6">
+            <h2 id="password-modal-title" class="text-2xl font-bold text-white mb-4">Add a New Password</h2>
+            <form id="add-password-form" class="space-y-4">
+                <input type="hidden" id="edit-password-id">
+                <input type="text" id="password-site" placeholder="Website Name" required class="w-full bg-gray-600 border border-gray-500 text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <input type="text" id="password-username" placeholder="Username" required class="w-full bg-gray-600 border border-gray-500 text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <div class="relative">
+                    <input type="password" id="password-value" placeholder="Password" required class="w-full bg-gray-600 border border-gray-500 text-white rounded-xl px-4 py-3 pr-10 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <button type="button" id="toggle-password-visibility" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <input type="text" id="password-icon" placeholder="Font Awesome Icon Class (e.g., fas fa-key)" class="w-full bg-gray-600 border border-gray-500 text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <button type="submit" id="password-modal-submit-btn" class="w-full bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-700 hover:to-gray-800 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105">
+                    Add Password
+                </button>
+            </form>
+            <button id="close-password-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fas fa-times fa-lg"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Custom Modal for Confirmation/Alerts -->
+    <div id="custom-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-lg text-center">
+            <p id="modal-message" class="text-white text-lg mb-4"></p>
+            <button id="modal-confirm-btn" class="bg-red-700 text-white font-semibold py-2 px-6 rounded-lg mr-2 hover:bg-red-800 transition-colors hidden">Confirm</button>
+            <button id="modal-cancel-btn" class="bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-gray-700 transition-colors hidden">Cancel</button>
+            <button id="modal-ok-btn" class="bg-teal-700 text-white font-semibold py-2 px-6 rounded-lg hover:bg-teal-800 transition-colors hidden">OK</button>
+        </div>
+    </div>
+    
+    <!-- Modals for Link/Password Selection -->
+    <div id="item-type-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden">
+        <div class="relative max-w-xs w-full bg-gray-800 rounded-3xl shadow-2xl p-8 space-y-4 text-center">
+            <h2 class="text-2xl font-bold text-white mb-2">What would you like to add?</h2>
+            <button id="add-link-choice" class="w-full bg-gradient-to-r from-teal-700 to-blue-800 hover:from-teal-800 hover:to-blue-900 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105">
+                Add Link
+            </button>
+            <button id="add-password-choice" class="w-full bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-700 hover:to-gray-800 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105">
+                Add Password
+            </button>
+            <button id="close-item-type-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fas fa-times fa-lg"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Export Data Modal -->
+    <div id="export-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden">
+        <div class="relative max-w-sm w-full bg-gray-800 rounded-3xl shadow-2xl p-8 space-y-4 text-center">
+            <h2 class="text-2xl font-bold text-white mb-2">Export Your Data</h2>
+            <p class="text-gray-400">Choose a format to save your decrypted data.</p>
+            <div id="export-content-container" class="hidden"></div>
+            <button id="export-as-pdf-btn" class="w-full bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-700 hover:to-gray-800 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105">
+                Download
+            </button>
+            <button id="copy-as-text-btn" class="w-full bg-gradient-to-r from-teal-700 to-blue-800 hover:from-teal-800 hover:to-blue-900 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105">
+                Copy as Text
+            </button>
+            <button id="close-export-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fas fa-times fa-lg"></i>
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+        // Global variables and DOM elements
+        let passphrase = '';
+        const localStorageKey = 'orbit_data';
+        
+        const linksContainer = document.getElementById('links-container');
+        const passwordsContainer = document.getElementById('passwords-container');
+        const addItemBtn = document.getElementById('add-item-btn');
+        const itemTypeModal = document.getElementById('item-type-modal');
+        const addLinkChoiceBtn = document.getElementById('add-link-choice');
+        const addPasswordChoiceBtn = document.getElementById('add-password-choice');
+        const closeItemTypeModalBtn = document.getElementById('close-item-type-modal-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const searchInput = document.getElementById('search-input');
+
+        const addLinkModal = document.getElementById('add-link-modal');
+        const linkModalTitle = document.getElementById('link-modal-title');
+        const linkModalSubmitBtn = document.getElementById('link-modal-submit-btn');
+        const addPasswordModal = document.getElementById('add-password-modal');
+        const passwordModalTitle = document.getElementById('password-modal-title');
+        const passwordModalSubmitBtn = document.getElementById('password-modal-submit-btn');
+        const closeLinkModalBtn = document.getElementById('close-link-modal-btn');
+        const closePasswordModalBtn = document.getElementById('close-password-modal-btn');
+
+        const addLinkForm = document.getElementById('add-link-form');
+        const addPasswordForm = document.getElementById('add-password-form');
+        
+        const linkNameInput = document.getElementById('link-name');
+        const linkUrlInput = document.getElementById('link-url');
+        const linkIconInput = document.getElementById('link-icon');
+        const editLinkIdInput = document.getElementById('edit-link-id');
+        
+        const passwordSiteInput = document.getElementById('password-site');
+        const passwordUsernameInput = document.getElementById('password-username');
+        const passwordValueInput = document.getElementById('password-value');
+        const passwordIconInput = document.getElementById('password-icon');
+        const editPasswordIdInput = document.getElementById('edit-password-id');
+        const togglePasswordVisibility = document.getElementById('toggle-password-visibility');
+        
+        const loadingLinksMessage = document.getElementById('loading-links-message');
+        const loadingPasswordsMessage = document.getElementById('loading-passwords-message');
+        
+        const passphraseModal = document.getElementById('passphrase-modal');
+        const passphraseForm = document.getElementById('passphrase-form');
+        const passphraseInput = document.getElementById('passphrase-input');
+        const passphraseModalTitle = document.getElementById('passphrase-modal-title');
+        const passphraseError = document.getElementById('passphrase-error');
+        
+        // Custom Modal elements
+        const customModal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        const modalOkBtn = document.getElementById('modal-ok-btn');
+
+        // Export Modal elements
+        const exportModal = document.getElementById('export-modal');
+        const closeExportModalBtn = document.getElementById('close-export-modal-btn');
+        const exportAsPdfBtn = document.getElementById('export-as-pdf-btn');
+        const copyAsTextBtn = document.getElementById('copy-as-text-btn');
+        const exportContentContainer = document.getElementById('export-content-container');
+
+        // Password visibility toggle
+        togglePasswordVisibility.addEventListener('click', () => {
+            const passwordField = passwordValueInput;
+            const icon = togglePasswordVisibility.querySelector('i');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+
+        // Function to show a custom modal (for confirmation or alerts)
+        function showCustomModal(message, type, onConfirm) {
+            modalMessage.textContent = message;
+            modalConfirmBtn.onclick = () => { onConfirm(); hideCustomModal(); };
+
+            modalConfirmBtn.classList.add('hidden');
+            modalCancelBtn.classList.add('hidden');
+            modalOkBtn.classList.add('hidden');
+
+            if (type === 'confirm') {
+                modalConfirmBtn.classList.remove('hidden');
+                modalCancelBtn.classList.remove('hidden');
+                modalCancelBtn.onclick = hideCustomModal;
+            } else {
+                modalOkBtn.classList.remove('hidden');
+                modalOkBtn.onclick = hideCustomModal;
+            }
+
+            customModal.classList.remove('hidden');
+        }
+
+        function hideCustomModal() {
+            customModal.classList.add('hidden');
+        }
+        
+        // --- LOCAL STORAGE FUNCTIONS ---
+        // Save data to local storage
+        function saveDataToLocalStorage(data) {
+            try {
+                const dataStr = JSON.stringify(data);
+                localStorage.setItem(localStorageKey, dataStr);
+                return true;
+            } catch (e) {
+                console.error("Error saving to local storage:", e);
+                showCustomModal('Could not save data. Local storage may be full or unavailable.', 'alert');
+                return false;
+            }
+        }
+        
+        // Load data from local storage
+        function loadDataFromLocalStorage() {
+            try {
+                const data = localStorage.getItem(localStorageKey);
+                return data ? JSON.parse(data) : { links: [], passwords: [], checkValue: null };
+            } catch (e) {
+                console.error("Error loading from local storage:", e);
+                return { links: [], passwords: [], checkValue: null };
+            }
+        }
+        
+        // Encryption and Decryption functions using CryptoJS
+        function encrypt(text, key) {
+            if (!text || !key) return '';
+            try {
+                return CryptoJS.AES.encrypt(text, key).toString();
+            } catch (e) {
+                console.error("Encryption failed:", e);
+                return '';
+            }
+        }
+
+        function decrypt(ciphertext, key) {
+            if (!ciphertext || !key) return '';
+            try {
+                const bytes = CryptoJS.AES.decrypt(ciphertext, key);
+                const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+                return decryptedText || null;
+            } catch (e) {
+                console.error("Decryption failed:", e);
+                return null;
+            }
+        }
+
+        // Input sanitization
+        function sanitizeInput(input) {
+            if (typeof input !== 'string') return '';
+            return input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                        .replace(/<[^>]*>/g, '')
+                        .trim();
+        }
+        
+        // --- RENDER ELEMENTS ---
+        const createLinkElement = (link) => {
+            const decryptedName = decrypt(link.name, passphrase);
+            const decryptedUrl = decrypt(link.url, passphrase);
+            
+            // Validate decryption
+            if (!decryptedName || !decryptedUrl) {
+                console.warn("Failed to decrypt link data");
+                return null;
+            }
+            
+            const linkDiv = document.createElement('div');
+            linkDiv.className = `w-full bg-gradient-to-r ${link.active ? 'from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500' : 'from-red-900 to-red-800 opacity-50'} transition-all duration-300 rounded-2xl px-6 py-4 shadow-md flex justify-between items-center transform hover:-translate-y-1`;
+            
+            const linkAnchor = document.createElement('a');
+            linkAnchor.href = decryptedUrl;
+            linkAnchor.target = '_blank';
+            linkAnchor.rel = 'noopener noreferrer';
+            linkAnchor.className = 'flex items-center flex-grow text-white truncate mr-4';
+            
+            const iconElement = document.createElement('i');
+            iconElement.className = `${link.icon || 'fas fa-link'} mr-3 text-xl text-teal-400`;
+            linkAnchor.appendChild(iconElement);
+
+            const linkSpan = document.createElement('span');
+            linkSpan.className = `text-lg font-semibold ${!link.active ? 'line-through' : ''}`;
+            linkSpan.textContent = decryptedName;
+            
+            linkAnchor.appendChild(linkSpan);
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'flex items-center space-x-2';
+
+            const activeToggleButton = document.createElement('button');
+            activeToggleButton.className = 'p-2 rounded-full text-white transition-colors duration-200';
+            activeToggleButton.innerHTML = `<i class="fa-solid ${link.active ? 'fa-toggle-on text-green-400' : 'fa-toggle-off text-gray-400'}"></i>`;
+            activeToggleButton.title = link.active ? 'Deactivate' : 'Activate';
+            activeToggleButton.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const data = loadDataFromLocalStorage();
+                const linkIndex = data.links.findIndex(item => item.id === link.id);
+                if (linkIndex !== -1) {
+                    data.links[linkIndex].active = !data.links[linkIndex].active;
+                    saveDataToLocalStorage(data);
+                    renderAllItems();
+                }
+            };
+            
+            const editButton = document.createElement('button');
+            editButton.className = 'p-2 rounded-full text-white transition-colors duration-200 hover:text-yellow-400';
+            editButton.innerHTML = `<i class="fas fa-edit"></i>`;
+            editButton.title = 'Edit Link';
+            editButton.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openEditModal('link', link);
+            };
+
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'p-2 rounded-full text-white transition-colors duration-200 hover:text-red-500';
+            deleteButton.innerHTML = `<i class="fas fa-trash"></i>`;
+            deleteButton.title = 'Delete Link';
+            deleteButton.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showCustomModal('Are you sure you want to delete this link?', 'confirm', () => {
+                    const data = loadDataFromLocalStorage();
+                    data.links = data.links.filter(item => item.id !== link.id);
+                    saveDataToLocalStorage(data);
+                    renderAllItems();
+                });
+            };
+
+            buttonContainer.appendChild(activeToggleButton);
+            buttonContainer.appendChild(editButton);
+            buttonContainer.appendChild(deleteButton);
+
+            linkDiv.appendChild(linkAnchor);
+            linkDiv.appendChild(buttonContainer);
+
+            return linkDiv;
+        };
+
+        const createPasswordElement = (password) => {
+            const decryptedSite = decrypt(password.site, passphrase);
+            const decryptedUsername = decrypt(password.username, passphrase);
+            const decryptedValue = decrypt(password.value, passphrase);
+            
+            // Validate decryption
+            if (!decryptedSite || !decryptedUsername || !decryptedValue) {
+                console.warn("Failed to decrypt password data");
+                return null;
+            }
+            
+            const passwordDiv = document.createElement('div');
+            passwordDiv.className = `w-full bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 transition-all duration-300 rounded-2xl px-6 py-4 shadow-md flex justify-between items-center transform hover:-translate-y-1`;
+            
+            const infoContainer = document.createElement('div');
+            infoContainer.className = 'flex-grow text-white mr-4';
+            
+            const siteContainer = document.createElement('div');
+            siteContainer.className = 'flex items-center space-x-2';
+            
+            const iconElement = document.createElement('i');
+            iconElement.className = `${password.icon || 'fas fa-key'} text-xl text-gray-400`;
+            siteContainer.appendChild(iconElement);
+            
+            const siteSpan = document.createElement('span');
+            siteSpan.className = 'block text-lg font-semibold';
+            siteSpan.textContent = decryptedSite;
+            siteContainer.appendChild(siteSpan);
+            
+            const userSpan = document.createElement('span');
+            userSpan.className = 'block text-sm text-gray-400 mt-1';
+            userSpan.textContent = decryptedUsername;
+            
+            const passwordSpanContainer = document.createElement('div');
+            passwordSpanContainer.className = 'flex items-center space-x-2 mt-2';
+            
+            const passwordSpan = document.createElement('span');
+            passwordSpan.className = 'block text-lg font-mono tracking-wider';
+            passwordSpan.textContent = '••••••••';
+            passwordSpan.dataset.password = decryptedValue;
+            
+            const showHideButton = document.createElement('button');
+            showHideButton.className = 'p-1 rounded-full text-gray-400 hover:text-white transition-colors duration-200';
+            showHideButton.innerHTML = `<i class="fas fa-eye"></i>`;
+            showHideButton.title = 'Show Password';
+            showHideButton.onclick = () => {
+                if (passwordSpan.textContent === '••••••••') {
+                    passwordSpan.textContent = passwordSpan.dataset.password;
+                    showHideButton.innerHTML = `<i class="fas fa-eye-slash"></i>`;
+                    showHideButton.title = 'Hide Password';
+                } else {
+                    passwordSpan.textContent = '••••••••';
+                    showHideButton.innerHTML = `<i class="fas fa-eye"></i>`;
+                    showHideButton.title = 'Show Password';
+                }
+            };
+            
+            const copyButton = document.createElement('button');
+            copyButton.className = 'p-1 rounded-full text-gray-400 hover:text-white transition-colors duration-200';
+            copyButton.innerHTML = `<i class="fas fa-copy"></i>`;
+            copyButton.title = 'Copy Password';
+            copyButton.onclick = () => {
+                // Modern clipboard API with fallback
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(passwordSpan.dataset.password).then(() => {
+                        showCustomModal('Password copied to clipboard!', 'alert', () => {});
+                    }).catch(err => {
+                        console.error('Failed to copy password:', err);
+                        fallbackCopyTextToClipboard(passwordSpan.dataset.password);
+                    });
+                } else {
+                    fallbackCopyTextToClipboard(passwordSpan.dataset.password);
+                }
+            };
+
+            // Fallback copy function for older browsers
+            function fallbackCopyTextToClipboard(text) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        showCustomModal('Password copied to clipboard!', 'alert', () => {});
+                    } else {
+                        showCustomModal('Failed to copy password', 'alert', () => {});
+                    }
+                } catch (err) {
+                    console.error('Fallback copy failed:', err);
+                    showCustomModal('Failed to copy password', 'alert', () => {});
+                }
+                
+                document.body.removeChild(textArea);
+            }
+
+            infoContainer.appendChild(siteContainer);
+            infoContainer.appendChild(userSpan);
+            passwordSpanContainer.appendChild(passwordSpan);
+            passwordSpanContainer.appendChild(showHideButton);
+            passwordSpanContainer.appendChild(copyButton);
+            infoContainer.appendChild(passwordSpanContainer);
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'flex items-center space-x-2';
+            
+            const editButton = document.createElement('button');
+            editButton.className = 'p-2 rounded-full text-white transition-colors duration-200 hover:text-yellow-400';
+            editButton.innerHTML = `<i class="fas fa-edit"></i>`;
+            editButton.title = 'Edit Password';
+            editButton.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openEditModal('password', password);
+            };
+            
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'p-2 rounded-full text-white transition-colors duration-200 hover:text-red-500';
+            deleteButton.innerHTML = `<i class="fas fa-trash"></i>`;
+            deleteButton.title = 'Delete Password';
+            deleteButton.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showCustomModal('Are you sure you want to delete this password?', 'confirm', () => {
+                    const data = loadDataFromLocalStorage();
+                    data.passwords = data.passwords.filter(item => item.id !== password.id);
+                    saveDataToLocalStorage(data);
+                    renderAllItems();
+                });
+            };
+            
+            buttonContainer.appendChild(editButton);
+            buttonContainer.appendChild(deleteButton);
+
+            passwordDiv.appendChild(infoContainer);
+            passwordDiv.appendChild(buttonContainer);
+
+            return passwordDiv;
+        };
+
+        const renderLinks = (links) => {
+            linksContainer.innerHTML = '';
+            loadingLinksMessage.style.display = 'none';
+            if (links.length === 0) {
+                linksContainer.innerHTML = '<p class="text-center text-gray-400">No links match your search.</p>';
+            } else {
+                links.forEach(link => {
+                    const linkElement = createLinkElement(link);
+                    if (linkElement) {
+                        linksContainer.appendChild(linkElement);
+                    }
+                });
+            }
+        };
+
+        const renderPasswords = (passwords) => {
+            passwordsContainer.innerHTML = '';
+            loadingPasswordsMessage.style.display = 'none';
+            if (passwords.length === 0) {
+                passwordsContainer.innerHTML = '<p class="text-center text-gray-400">No passwords match your search.</p>';
+            } else {
+                passwords.forEach(password => {
+                    const passwordElement = createPasswordElement(password);
+                    if (passwordElement) {
+                        passwordsContainer.appendChild(passwordElement);
+                    }
+                });
+            }
+        };
+        
+        // Render all items from local storage
+        function renderAllItems() {
+            const data = loadDataFromLocalStorage();
+            renderLinks(data.links);
+            renderPasswords(data.passwords);
+        }
+        
+        // --- MODAL AND FORM LOGIC ---
+        function resetLinkModal() {
+            linkModalTitle.textContent = 'Add a New Link';
+            linkModalSubmitBtn.textContent = 'Add Link';
+            editLinkIdInput.value = '';
+            addLinkForm.reset();
+            passphraseError.classList.add('hidden');
+        }
+
+        function resetPasswordModal() {
+            passwordModalTitle.textContent = 'Add a New Password';
+            passwordModalSubmitBtn.textContent = 'Add Password';
+            editPasswordIdInput.value = '';
+            addPasswordForm.reset();
+            passphraseError.classList.add('hidden');
+        }
+        
+        function openEditModal(type, item) {
+            if (type === 'link') {
+                resetLinkModal();
+                linkModalTitle.textContent = 'Edit Link';
+                linkModalSubmitBtn.textContent = 'Save Changes';
+                editLinkIdInput.value = item.id;
+                linkNameInput.value = decrypt(item.name, passphrase) || '';
+                linkUrlInput.value = decrypt(item.url, passphrase) || '';
+                linkIconInput.value = item.icon || '';
+                addLinkModal.classList.remove('hidden');
+            } else if (type === 'password') {
+                resetPasswordModal();
+                passwordModalTitle.textContent = 'Edit Password';
+                passwordModalSubmitBtn.textContent = 'Save Changes';
+                editPasswordIdInput.value = item.id;
+                passwordSiteInput.value = decrypt(item.site, passphrase) || '';
+                passwordUsernameInput.value = decrypt(item.username, passphrase) || '';
+                passwordValueInput.value = decrypt(item.value, passphrase) || '';
+                passwordIconInput.value = item.icon || '';
+                addPasswordModal.classList.remove('hidden');
+            }
+        }
+
+        // Modal open/close handlers
+        addItemBtn.addEventListener('click', () => {
+            if (passphrase) {
+                resetLinkModal();
+                resetPasswordModal();
+                itemTypeModal.classList.remove('hidden');
+            } else {
+                showCustomModal('Please enter a passphrase first.', 'alert', () => {});
+            }
+        });
+        
+        closeItemTypeModalBtn.addEventListener('click', () => {
+            itemTypeModal.classList.add('hidden');
+        });
+        
+        addLinkChoiceBtn.addEventListener('click', () => {
+            itemTypeModal.classList.add('hidden');
+            addLinkModal.classList.remove('hidden');
+        });
+        
+        addPasswordChoiceBtn.addEventListener('click', () => {
+            itemTypeModal.classList.add('hidden');
+            addPasswordModal.classList.remove('hidden');
+        });
+
+        closeLinkModalBtn.addEventListener('click', () => addLinkModal.classList.add('hidden'));
+        closePasswordModalBtn.addEventListener('click', () => addPasswordModal.classList.add('hidden'));
+        closeExportModalBtn.addEventListener('click', () => exportModal.classList.add('hidden'));
+
+        addLinkModal.addEventListener('click', (e) => {
+            if (e.target.id === 'add-link-modal') {
+                addLinkModal.classList.add('hidden');
+            }
+        });
+        
+        addPasswordModal.addEventListener('click', (e) => {
+            if (e.target.id === 'add-password-modal') {
+                addPasswordModal.classList.add('hidden');
+            }
+        });
+
+        // URL validation helper
+        function isValidUrl(string) {
+            try {
+                const url = new URL(string);
+                return url.protocol === 'http:' || url.protocol === 'https:';
+            } catch (_) {
+                return false;
+            }
+        }
+        
+        // Add/Edit link form handler
+        addLinkForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = sanitizeInput(linkNameInput.value);
+            const url = sanitizeInput(linkUrlInput.value);
+            const icon = sanitizeInput(linkIconInput.value);
+            const id = editLinkIdInput.value;
+
+            // Validation
+            if (!name || !url) {
+                showCustomModal('Please fill in all required fields.', 'alert', () => {});
+                return;
+            }
+
+            if (!isValidUrl(url)) {
+                showCustomModal('Please enter a valid URL (including http:// or https://).', 'alert', () => {});
+                return;
+            }
+
+            if (passphrase) {
+                const data = loadDataFromLocalStorage();
+                if (id) {
+                    // Edit existing link
+                    const linkIndex = data.links.findIndex(item => item.id === id);
+                    if (linkIndex !== -1) {
+                        data.links[linkIndex].name = encrypt(name, passphrase);
+                        data.links[linkIndex].url = encrypt(url, passphrase);
+                        data.links[linkIndex].icon = icon;
+                    }
+                } else {
+                    // Add new link
+                    const newLink = {
+                        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                        name: encrypt(name, passphrase),
+                        url: encrypt(url, passphrase),
+                        active: true,
+                        icon: icon,
+                        createdAt: new Date().toISOString()
+                    };
+                    data.links.push(newLink);
+                }
+                
+                if (saveDataToLocalStorage(data)) {
+                    addLinkModal.classList.add('hidden');
+                    renderAllItems();
+                    showCustomModal(id ? 'Link updated successfully!' : 'Link added successfully!', 'alert', () => {});
+                }
+            } else {
+                showCustomModal('Please set a passphrase first!', 'alert', () => {});
+            }
+        });
+
+        // Add/Edit password form handler
+        addPasswordForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const site = sanitizeInput(passwordSiteInput.value);
+            const username = sanitizeInput(passwordUsernameInput.value);
+            const value = passwordValueInput.value; // Don't sanitize password value
+            const icon = sanitizeInput(passwordIconInput.value);
+            const id = editPasswordIdInput.value;
+
+            // Validation
+            if (!site || !username || !value) {
+                showCustomModal('Please fill in all required fields.', 'alert', () => {});
+                return;
+            }
+
+            if (value.length < 4) {
+                showCustomModal('Password must be at least 4 characters long.', 'alert', () => {});
+                return;
+            }
+
+            if (passphrase) {
+                const data = loadDataFromLocalStorage();
+                if (id) {
+                    // Edit existing password
+                    const passwordIndex = data.passwords.findIndex(item => item.id === id);
+                    if (passwordIndex !== -1) {
+                        data.passwords[passwordIndex].site = encrypt(site, passphrase);
+                        data.passwords[passwordIndex].username = encrypt(username, passphrase);
+                        data.passwords[passwordIndex].value = encrypt(value, passphrase);
+                        data.passwords[passwordIndex].icon = icon;
+                    }
+                } else {
+                    // Add new password
+                    const newPassword = {
+                        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                        site: encrypt(site, passphrase),
+                        username: encrypt(username, passphrase),
+                        value: encrypt(value, passphrase),
+                        icon: icon,
+                        createdAt: new Date().toISOString()
+                    };
+                    data.passwords.push(newPassword);
+                }
+                
+                if (saveDataToLocalStorage(data)) {
+                    addPasswordModal.classList.add('hidden');
+                    renderAllItems();
+                    showCustomModal(id ? 'Password updated successfully!' : 'Password added successfully!', 'alert', () => {});
+                }
+            } else {
+                showCustomModal('Please set a passphrase first!', 'alert', () => {});
+            }
+        });
+
+        // Passphrase form handler
+        passphraseForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const inputPassphrase = passphraseInput.value;
+            const data = loadDataFromLocalStorage();
+            const isPassphraseSet = data.checkValue !== null;
+
+            // Clear previous errors
+            passphraseError.classList.add('hidden');
+
+            // Validation
+            if (!inputPassphrase) {
+                passphraseError.textContent = 'Passphrase cannot be empty.';
+                passphraseError.classList.remove('hidden');
+                return;
+            }
+
+            if (!isPassphraseSet && inputPassphrase.length < 6) {
+                passphraseError.textContent = 'Passphrase must be at least 6 characters long.';
+                passphraseError.classList.remove('hidden');
+                return;
+            }
+
+            if (isPassphraseSet) {
+                // User is logging in
+                if (decrypt(data.checkValue, inputPassphrase) === 'passphrase-is-correct') {
+                    passphrase = inputPassphrase;
+                    passphraseModal.classList.add('hidden');
+                    logoutBtn.classList.remove('hidden');
+                    exportBtn.classList.remove('hidden');
+                    showCustomModal('Login successful!', 'alert', () => {});
+                    renderAllItems();
+                } else {
+                    passphraseError.textContent = 'Incorrect passphrase. Please try again.';
+                    passphraseError.classList.remove('hidden');
+                }
+            } else {
+                // User is setting a new passphrase
+                passphrase = inputPassphrase;
+                data.checkValue = encrypt('passphrase-is-correct', passphrase);
+                
+                if (saveDataToLocalStorage(data)) {
+                    passphraseModal.classList.add('hidden');
+                    logoutBtn.classList.remove('hidden');
+                    exportBtn.classList.remove('hidden');
+                    showCustomModal('Passphrase set successfully! You can now add links and passwords.', 'alert', () => {});
+                    renderAllItems();
+                } else {
+                    passphraseError.textContent = 'Failed to save passphrase.';
+                    passphraseError.classList.remove('hidden');
+                }
+            }
+        });
+        
+        // Logout handler
+        logoutBtn.addEventListener('click', () => {
+            passphrase = '';
+            passphraseInput.value = '';
+            passphraseError.classList.add('hidden');
+            passphraseModalTitle.textContent = 'Enter Passphrase to Continue';
+            passphraseModal.classList.remove('hidden');
+            logoutBtn.classList.add('hidden');
+            exportBtn.classList.add('hidden');
+            // Clear the rendered items
+            linksContainer.innerHTML = '<p class="text-center text-gray-400">Please log in to view your links.</p>';
+            passwordsContainer.innerHTML = '<p class="text-center text-gray-400">Please log in to view your passwords.</p>';
+            searchInput.value = '';
+            showCustomModal('Logged out successfully.', 'alert', () => {});
+        });
+
+        // Export button handler
+        exportBtn.addEventListener('click', () => {
+            if (passphrase) {
+                exportModal.classList.remove('hidden');
+            } else {
+                showCustomModal('Please log in with a passphrase to export data.', 'alert', () => {});
+            }
+        });
+
+        // Export as PDF button handler
+        exportAsPdfBtn.addEventListener('click', async () => {
+            if (!passphrase) {
+                showCustomModal('Please log in with a passphrase to export data.', 'alert', () => {});
+                return;
+            }
+
+            const data = loadDataFromLocalStorage();
+            if (data.links.length === 0 && data.passwords.length === 0) {
+                showCustomModal('No data to export!', 'alert', () => {});
+                return;
+            }
+
+            try {
+                // Create a temporary element to hold the data for PDF generation
+                exportContentContainer.innerHTML = '';
+                const exportHtml = `
+                    <div class="p-8 text-black bg-white" style="font-family: 'Inter', sans-serif; max-width: 600px;">
+                        <h1 class="text-3xl font-bold mb-6 text-center">Orbit Data Export</h1>
+                        <p class="text-center text-gray-600 mb-8">${new Date().toLocaleDateString()}</p>
+                        
+                        <h2 class="text-2xl font-bold mt-8 mb-4">Links (${data.links.length})</h2>
+                        ${data.links.length > 0 ? `
+                            <ul class="space-y-4">
+                                ${data.links.map(link => `
+                                    <li class="p-4 border rounded-xl flex items-center space-x-4">
+                                        <i class="${link.icon || 'fas fa-link'} text-xl text-teal-500"></i>
+                                        <div>
+                                            <h3 class="text-lg font-semibold">${decrypt(link.name, passphrase) || 'Error decrypting'}</h3>
+                                            <p class="text-sm text-gray-600 break-all">${decrypt(link.url, passphrase) || 'Error decrypting'}</p>
+                                            <p class="text-xs text-gray-500">Status: ${link.active ? 'Active' : 'Inactive'}</p>
+                                        </div>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        ` : '<p class="text-gray-500">No links found.</p>'}
+                        
+                        <h2 class="text-2xl font-bold mt-8 mb-4">Passwords (${data.passwords.length})</h2>
+                        ${data.passwords.length > 0 ? `
+                            <ul class="space-y-4">
+                                ${data.passwords.map(password => `
+                                    <li class="p-4 border rounded-xl flex items-center space-x-4">
+                                        <i class="${password.icon || 'fas fa-key'} text-xl text-gray-500"></i>
+                                        <div>
+                                            <h3 class="text-lg font-semibold">${decrypt(password.site, passphrase) || 'Error decrypting'}</h3>
+                                            <p class="text-sm text-gray-600">Username: ${decrypt(password.username, passphrase) || 'Error decrypting'}</p>
+                                            <p class="text-sm text-gray-600">Password: ${decrypt(password.value, passphrase) || 'Error decrypting'}</p>
+                                        </div>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        ` : '<p class="text-gray-500">No passwords found.</p>'}
+                    </div>
+                `;
+                exportContentContainer.innerHTML = exportHtml;
+                exportContentContainer.classList.remove('hidden');
+
+                // Generate the PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'pt', 'a4');
+                const element = exportContentContainer.querySelector('div');
+
+                await html2canvas(element, { 
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: false
+                }).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgProps = doc.getImageProperties(imgData);
+                    const pdfWidth = doc.internal.pageSize.getWidth();
+                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                    
+                    // Handle multi-page PDFs if content is too long
+                    const pageHeight = doc.internal.pageSize.getHeight();
+                    let heightLeft = pdfHeight;
+                    let position = 0;
+
+                    doc.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+                    heightLeft -= pageHeight;
+
+                    while (heightLeft >= 0) {
+                        position = heightLeft - pdfHeight;
+                        doc.addPage();
+                        doc.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+                        heightLeft -= pageHeight;
+                    }
+                    
+                    doc.save(`orbit_data_export_${new Date().toISOString().split('T')[0]}.pdf`);
+                });
+                
+                exportModal.classList.add('hidden');
+                exportContentContainer.innerHTML = '';
+                exportContentContainer.classList.add('hidden');
+                showCustomModal('PDF generated and downloaded!', 'alert', () => {});
+            } catch (error) {
+                console.error('PDF export failed:', error);
+                showCustomModal('Failed to generate PDF. Please try again.', 'alert', () => {});
+                exportContentContainer.innerHTML = '';
+                exportContentContainer.classList.add('hidden');
+            }
+        });
+
+        // Copy as Text button handler
+        copyAsTextBtn.addEventListener('click', () => {
+            if (!passphrase) {
+                showCustomModal('Please log in with a passphrase to export data.', 'alert', () => {});
+                return;
+            }
+            
+            const data = loadDataFromLocalStorage();
+            if (data.links.length === 0 && data.passwords.length === 0) {
+                showCustomModal('No data to export!', 'alert', () => {});
+                return;
+            }
+
+            let exportText = "=== Orbit Data Export ===\n";
+            exportText += `Export Date: ${new Date().toLocaleString()}\n\n`;
+            
+            exportText += `MY LINKS (${data.links.length}):\n`;
+            exportText += "=" + "=".repeat(20) + "\n";
+            
+            if (data.links.length > 0) {
+                data.links.forEach((link, index) => {
+                    const name = decrypt(link.name, passphrase) || 'Error decrypting';
+                    const url = decrypt(link.url, passphrase) || 'Error decrypting';
+                    exportText += `${index + 1}. ${name}\n`;
+                    exportText += `   URL: ${url}\n`;
+                    exportText += `   Status: ${link.active ? 'Active' : 'Inactive'}\n\n`;
+                });
+            } else {
+                exportText += "No links found.\n\n";
+            }
+            
+            exportText += `MY PASSWORDS (${data.passwords.length}):\n`;
+            exportText += "=" + "=".repeat(25) + "\n";
+            
+            if (data.passwords.length > 0) {
+                data.passwords.forEach((password, index) => {
+                    const site = decrypt(password.site, passphrase) || 'Error decrypting';
+                    const username = decrypt(password.username, passphrase) || 'Error decrypting';
+                    const value = decrypt(password.value, passphrase) || 'Error decrypting';
+                    exportText += `${index + 1}. ${site}\n`;
+                    exportText += `   Username: ${username}\n`;
+                    exportText += `   Password: ${value}\n\n`;
+                });
+            } else {
+                exportText += "No passwords found.\n\n";
+            }
+
+            exportText += "=== End of Export ===";
+
+            // Modern clipboard API with fallback
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(exportText).then(() => {
+                    exportModal.classList.add('hidden');
+                    showCustomModal('Data copied to clipboard!', 'alert', () => {});
+                }).catch(err => {
+                    console.error('Failed to copy to clipboard:', err);
+                    fallbackCopyToClipboard(exportText);
+                });
+            } else {
+                fallbackCopyToClipboard(exportText);
+            }
+
+            function fallbackCopyToClipboard(text) {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    const successful = document.execCommand('copy');
+                    exportModal.classList.add('hidden');
+                    if (successful) {
+                        showCustomModal('Data copied to clipboard!', 'alert', () => {});
+                    } else {
+                        showCustomModal('Failed to copy data to clipboard.', 'alert', () => {});
+                    }
+                } catch (err) {
+                    console.error('Fallback copy failed:', err);
+                    showCustomModal('Failed to copy data to clipboard.', 'alert', () => {});
+                }
+                
+                document.body.removeChild(textArea);
+            }
+        });
+        
+        // Search input handler with debouncing
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const searchTerm = e.target.value.toLowerCase().trim();
+                const data = loadDataFromLocalStorage();
+                
+                if (!passphrase) {
+                    return;
+                }
+                
+                // Filter links
+                const filteredLinks = data.links.filter(link => {
+                    const name = decrypt(link.name, passphrase);
+                    const url = decrypt(link.url, passphrase);
+                    if (!name || !url) return false;
+                    return name.toLowerCase().includes(searchTerm) || 
+                           url.toLowerCase().includes(searchTerm);
+                });
+                renderLinks(filteredLinks);
+                
+                // Filter passwords
+                const filteredPasswords = data.passwords.filter(password => {
+                    const site = decrypt(password.site, passphrase);
+                    const username = decrypt(password.username, passphrase);
+                    if (!site || !username) return false;
+                    return site.toLowerCase().includes(searchTerm) || 
+                           username.toLowerCase().includes(searchTerm);
+                });
+                renderPasswords(filteredPasswords);
+            }, 300); // 300ms debounce
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + K to focus search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+            
+            // Escape to close modals
+            if (e.key === 'Escape') {
+                if (!passphraseModal.classList.contains('hidden')) {
+                    // Don't allow closing passphrase modal with escape
+                    return;
+                }
+                addLinkModal.classList.add('hidden');
+                addPasswordModal.classList.add('hidden');
+                itemTypeModal.classList.add('hidden');
+                exportModal.classList.add('hidden');
+                customModal.classList.add('hidden');
+            }
+        });
+
+        // Main initialization logic
+        function init() {
+            const data = loadDataFromLocalStorage();
+            
+            // Check if data exists and set appropriate modal title
+            if (data.checkValue) {
+                passphraseModalTitle.textContent = 'Enter Passphrase to Continue';
+            } else {
+                passphraseModalTitle.textContent = 'Create a Passphrase';
+            }
+            
+            passphraseModal.classList.remove('hidden');
+            
+            // Set initial loading state
+            linksContainer.innerHTML = '<p class="text-center text-gray-400">Please log in to view your links.</p>';
+            passwordsContainer.innerHTML = '<p class="text-center text-gray-400">Please log in to view your passwords.</p>';
+        }
+
+        // Error handling for uncaught errors
+        window.addEventListener('error', (e) => {
+            console.error('Uncaught error:', e.error);
+            showCustomModal('An unexpected error occurred. Please refresh the page.', 'alert', () => {});
+        });
+
+        // Initialize the application
+        init();
+    </script>
+
+</body>
+</html>
